@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview — Accoglienza e Protezione</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+
+    /* ================================================
+       PREVIEW BAR — solo in anteprima
+       ================================================ */
+    body {
+      padding-top: 80px;
+    }
+
+    .preview-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #313131;
+      color: #f2f2f2;
+      font-size: 13px;
+      font-family: 'Noto Sans', sans-serif;
+      padding: 8px 20px;
+      z-index: 9999;
+      letter-spacing: 1px;
+    }
+
+    .preview-bar strong {
+      color: #3b8c6e;
+    }
+
+    /* ================================================
+       NUOVI STILI — Blocchi Accoglienza e Protezione
+       ================================================ */
+
+    /* --- About block --- */
+    .about-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .about-block .text-col h2 {
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .about-block .text-col p {
+      font-size: 20px;
+    }
+
+    .about-block .img-col img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 2px 5px 20px rgba(49, 49, 49, 0.3);
+    }
+
+    /* --- I 4 Pilastri --- */
+    .pilastri-intro {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .pilastri-intro p {
+      font-size: 18px;
+      color: #666;
+      margin-top: 10px;
+      margin-bottom: 0;
+    }
+
+    .pilastri-grid {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .pilastro-card {
+      flex: 1 1 200px;
+      max-width: 240px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border-top: 4px solid var(--green);
+    }
+
+    .pilastro-card i {
+      font-size: 36px;
+      color: var(--green);
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .pilastro-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 10px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .pilastro-card p {
+      font-size: 15px;
+      color: #666;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* --- Numeri d'impatto --- */
+    .impact-intro {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .impact-grid {
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      padding: 40px 0 20px;
+      flex-wrap: wrap;
+    }
+
+    .impact-item {
+      text-align: center;
+    }
+
+    .impact-number {
+      font-size: 72px;
+      font-weight: 900;
+      line-height: 1;
+      display: block;
+    }
+
+    .impact-item p {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--dark);
+      margin-top: 12px;
+      margin-bottom: 0;
+    }
+
+    /* --- Testimonianza --- */
+    .testimonial-block {
+      background: #fff;
+      border-left: 6px solid var(--green);
+      padding: 40px 50px;
+      border-radius: 0 12px 12px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+
+    .testimonial-block blockquote {
+      font-size: 22px;
+      font-style: italic;
+      color: var(--dark);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .testimonial-block cite {
+      font-size: 14px;
+      color: var(--green);
+      font-style: normal;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* --- CTA Donazione --- */
+    .cta-donazione {
+      background: var(--dark);
+      color: #fff;
+      padding: 60px 40px;
+      text-align: center;
+      border-radius: 12px;
+    }
+
+    .cta-donazione h2 {
+      color: #fff;
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .cta-donazione > p {
+      color: rgba(255,255,255,0.75);
+      font-size: 18px;
+      margin-bottom: 40px;
+    }
+
+    .donation-options {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .donation-option {
+      border: 2px solid var(--green);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Noto Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .donation-option:hover {
+      background: var(--green);
+    }
+
+    .donation-option i {
+      margin-right: 8px;
+    }
+
+    .donation-option.red {
+      border-color: var(--red);
+      color: var(--red);
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .donation-option.red:hover {
+      background: var(--red);
+      color: #fff;
+    }
+
+    /* --- Blocco Educazione --- */
+    .educazione-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .educazione-block .text-col {
+      min-width: 0;
+    }
+
+    .educazione-tag {
+      display: inline-block;
+      background: var(--green);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 18px;
+    }
+
+    .educazione-block h2 {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .educazione-block > .text-col > p {
+      font-size: 18px;
+      color: #555;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+
+    .educazione-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 32px;
+    }
+
+    .educazione-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 16px;
+      color: var(--dark);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .educazione-list li i {
+      color: var(--green);
+      font-size: 18px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .educazione-block .img-col {
+      min-width: 0;
+    }
+
+    .educazione-block .img-col img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 2px 5px 20px rgba(49, 49, 49, 0.3);
+      display: block;
+    }
+
+    /* --- Responsive preview --- */
+    @media (max-width: 768px) {
+      .about-block {
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      .about-block .text-col h2 {
+        text-align: center;
+      }
+
+      .impact-grid {
+        gap: 40px;
+      }
+
+      .impact-number {
+        font-size: 52px;
+      }
+
+      .testimonial-block {
+        padding: 25px 20px;
+      }
+
+      .testimonial-block blockquote {
+        font-size: 18px;
+      }
+
+      .cta-donazione {
+        padding: 40px 20px;
+      }
+
+      .educazione-block {
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      .educazione-block h2 {
+        text-align: center;
+      }
+
+      .educazione-tag {
+        display: block;
+        text-align: center;
+        width: fit-content;
+        margin: 0 auto 18px;
+      }
+
+      .educazione-block > .text-col > p {
+        text-align: center;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Preview bar -->
+  <div class="preview-bar">
+    ANTEPRIMA — <strong>Accoglienza e Protezione</strong> — effataitalia.it/accoglienza-e-protezione/
+  </div>
+
+  <!-- ================================================
+       HERO — generato dal template PHP (non modificare)
+       ================================================ -->
+  <div class="hero-progetti">
+    <div class="content">
+      <h1>Effatà Children's Home</h1>
+      <p class="hero-subtitle">Il calore di una famiglia per i bimbi in Uganda</p>
+      <nav class="breadcrumbs">
+        <a href="#">Home</a>
+        <span class="separator">›</span>
+        <a href="#">Progetti</a>
+        <span class="separator">›</span>
+        <span class="breadcrumb_last">Accoglienza e Protezione</span>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ================================================
+       THE_CONTENT() — questi sono i blocchi Gutenberg
+       ================================================ -->
+
+  <!-- BLOCCO 1 — About / Intro → bianco -->
+  <section class="spacer">
+    <div class="content">
+      <div class="about-block">
+        <div class="text-col">
+          <h2 class="green-title">Effatà Children's Home</h2>
+          <p>La <strong>Children's Home di Effatà</strong> è una vera casa per i bimbi che accoglie, offrendo loro pasti quotidiani, cure mediche, istruzione e attività creative. Una casa per donare affetto e attenzioni a bambini dai <strong>0 ai 17 anni</strong> abbandonati dalla famiglia, orfani, che hanno subito violenze o maltrattamenti, o con bisogni speciali.</p>
+          <p>Ogni bambino trova stimoli di crescita positiva: lettura, disegno, pittura, laboratori manuali e cucina, una sala montessoriana per il gioco libero.</p>
+        </div>
+        <div class="img-col">
+          <img src="img/casafamiglia1.png" alt="Effatà Children's Home Uganda">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOCCO 2 — I 4 Pilastri → grigio -->
+  <section class="spacer gray">
+    <div class="content">
+      <div class="pilastri-intro">
+        <h2 class="green-title">Come proteggiamo i bambini</h2>
+        <p>Quattro pilastri fondamentali per garantire il loro futuro</p>
+      </div>
+      <div class="pilastri-grid">
+        <div class="pilastro-card">
+          <i class="fa-solid fa-house-chimney"></i>
+          <h3>Accoglienza</h3>
+          <p>Una casa sicura e affettuosa per ogni bambino</p>
+        </div>
+        <div class="pilastro-card">
+          <i class="fa-solid fa-apple-whole"></i>
+          <h3>Nutrizione</h3>
+          <p>Pasti quotidiani sani e bilanciati ogni giorno</p>
+        </div>
+        <div class="pilastro-card">
+          <i class="fa-solid fa-book-open"></i>
+          <h3>Istruzione</h3>
+          <p>Accesso alla scuola e supporto allo studio</p>
+        </div>
+        <div class="pilastro-card">
+          <i class="fa-solid fa-heart-pulse"></i>
+          <h3>Salute</h3>
+          <p>Assistenza medica e igiene quotidiana</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOCCO 3 — Numeri d'impatto → bianco -->
+  <section class="spacer">
+    <div class="content">
+      <div class="impact-intro">
+        <h2 class="green-title">Il nostro impatto</h2>
+      </div>
+      <div class="impact-grid">
+        <div class="impact-item">
+          <span class="impact-number" style="color: var(--red);">+500</span>
+          <p>Bambini accolti</p>
+        </div>
+        <div class="impact-item">
+          <a href="https://www.google.com/maps/search/Kalagala+Village,+Mukono+District,+Uganda" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">
+            <i class="fa-solid fa-location-dot" style="font-size: 48px; color: var(--green); display: block; margin-bottom: 12px;"></i>
+            <p>Kalagala Village<br>Mukono District, Uganda</p>
+          </a>
+        </div>
+        <div class="impact-item">
+          <span class="impact-number" style="color: var(--dark);">100%</span>
+          <p>Trasparenza</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOCCO 4 — Testimonianza → grigio -->
+  <section class="spacer gray">
+    <div class="content">
+      <div class="testimonial-block">
+        <blockquote>"Grazie a questo progetto, mio figlio è tornato a scuola e ha un pasto caldo ogni giorno. Non riuscivo a immaginare un futuro diverso, ora lo vedo sorridere."</blockquote>
+        <cite>— Un genitore della comunità, Uganda</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOCCO 5 — Educazione / Newsletter → bianco -->
+  <section class="spacer">
+    <div class="content">
+      <div class="educazione-block">
+        <div class="text-col">
+          <span class="educazione-tag">Educazione</span>
+          <h2 class="green-title">Scopri Come Diventare Parte del Cambiamento</h2>
+          <p>La nostra missione va oltre l'accoglienza: vogliamo creare una comunità consapevole e preparata ad affrontare le sfide dell'infanzia vulnerabile. Attraverso l'educazione e la formazione, costruiamo ponti tra culture e sensibilizziamo sulla necessità di proteggere ogni bambino.</p>
+          <ul class="educazione-list">
+            <li><i class="fa-solid fa-circle-check"></i> Partecipa alla vita associativa</li>
+            <li><i class="fa-solid fa-circle-check"></i> Ricevi materiali educativi e aggiornamenti sui progetti</li>
+            <li><i class="fa-solid fa-circle-check"></i> Connettiti con altri sostenitori e volontari</li>
+          </ul>
+          <a href="/progetti/" class="donation-option red">Scopri tutti i progetti</a>
+        </div>
+        <div class="img-col">
+          <img src="img/placeholder-educazione.jpg" alt="Educazione e formazione in Uganda">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOCCO 6 — CTA Donazione → grigio con box scuro interno -->
+  <section class="spacer gray">
+    <div class="content">
+      <div class="cta-donazione">
+        <h2>Sostieni la nostra missione</h2>
+        <p>Con il <strong>Calendario Solidale</strong> puoi scegliere un giorno dell'anno da dedicare a un bambino. Ogni giorno ha un valore simbolico: adottandolo, contribuisci concretamente al suo sostentamento, alla sua istruzione e alla sua cura.</p>
+        <div class="donation-options">
+          <a href="https://calendario.effataitalia.it/" class="donation-option" target="_blank" rel="noopener"><i class="fa-solid fa-calendar-day"></i> Scegli il tuo giorno</a>
+        </div>
+        <a href="https://calendario.effataitalia.it/" class="button adotta">Adotta un Giorno</a>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>
