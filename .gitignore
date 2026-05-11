@@ -1,0 +1,17 @@
+# Immagini pesanti
+img/*.jpg
+img/*.jpeg
+img/*.png
+img/*.gif
+img/*.svg
+
+# Font
+webfonts/
+fonts/
+
+# macOS
+.DS_Store
+img/.DS_Store
+
+# File temporanei
+*.log
