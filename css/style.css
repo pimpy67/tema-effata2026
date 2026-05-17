@@ -4341,6 +4341,10 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   .cpm-promemoria-col-left p  { font-size: 0.95rem; }
   .cpm-promemoria-form input[type="text"],
   .cpm-promemoria-form input[type="email"] { font-size: 16px; }
+
+  /* Spazio bianco sopra e sotto il paragrafo intro */
+  .page-template-page-5x1000 .spacer { padding: 24px 0; }
+  .cpm-content-wrap p { margin-top: 0; margin-bottom: 0; }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
