@@ -4347,7 +4347,7 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   .cpm-content-wrap p { margin-top: 0; margin-bottom: 0; }
 
   /* Blocco Spacer Gutenberg: dimezza altezza su mobile */
-  .page-template-page-5x1000 .wp-block-spacer { height: 20px !important; }
+  .page-template-page-5x1000 .wp-block-spacer { height: 10px !important; }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
