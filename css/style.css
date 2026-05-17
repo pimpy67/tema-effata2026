@@ -3389,13 +3389,13 @@ figure:has(.wp-image-91):hover .wp-image-91 {
 
 @media only screen and (max-width: 1024px) {
   .page-template-page-5x1000 .hero-progetti {
-    background-position: center center !important;
+    background-position: right center !important;
   }
 }
 
 @media only screen and (max-width: 768px) {
   .page-template-page-5x1000 .hero-progetti {
-    background-position: center center !important;
+    background-position: right center !important;
   }
 }
 
