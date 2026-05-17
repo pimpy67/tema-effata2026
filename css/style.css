@@ -4345,6 +4345,9 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   /* Spazio bianco sopra e sotto il paragrafo intro */
   .page-template-page-5x1000 .spacer { padding: 24px 0; }
   .cpm-content-wrap p { margin-top: 0; margin-bottom: 0; }
+
+  /* Blocco Spacer Gutenberg: dimezza altezza su mobile */
+  .page-template-page-5x1000 .wp-block-spacer { height: 20px !important; }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
