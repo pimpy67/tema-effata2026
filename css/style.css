@@ -3382,6 +3382,11 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   background-position: center 20% !important;
 }
 
+/* 5x1000: focal point immagine hero */
+.page-template-page-5x1000 .hero-progetti {
+  background-position: 35% 75% !important;
+}
+
 /* Chi Siamo: rimuove gradiente scuro sull'hero */
 .page-template-page-chi-siamo .hero-progetti::before {
   display: none;
