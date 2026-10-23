@@ -21,6 +21,8 @@ for f in \
   page-iscriviti.php \
   progetti.php \
   archive.php \
+  single.php \
+  template-parts/single-meta.php \
   footer.php \
   header.php \
   functions.php
