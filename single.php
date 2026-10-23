@@ -27,26 +27,34 @@
         </div>
     </div>
 
+    <?php
+    // Dagli articoli del 23/10/2026 in poi il titolo va a tutta larghezza, sopra testo e colonna di destra.
+    // Gli articoli precedenti restano com'erano.
+    $titolo_largo = get_the_date( 'Y-m-d' ) >= '2026-10-23';
+    ?>
+
     <!-- Contenuto articolo -->
     <div class="single-article-wrap">
         <div class="content">
+
+            <?php if ( $titolo_largo ) : ?>
+            <!-- Titolo e meta a tutta larghezza -->
+            <header class="single-head">
+                <h1 class="single-title single-title--largo"><?php the_title(); ?></h1>
+                <?php get_template_part( 'template-parts/single-meta' ); ?>
+            </header>
+            <?php endif; ?>
+
             <div class="flex article-flex">
 
                 <div class="col-6 col-1">
 
+                    <?php if ( ! $titolo_largo ) : ?>
                     <!-- Titolo -->
                     <h1 class="single-title"><?php the_title(); ?></h1>
 
-                    <!-- Meta: categoria + data + autore -->
-                    <div class="single-meta">
-                        <?php $cats = get_the_category(); if ( $cats ) : ?>
-                        <a class="single-category" href="<?php echo esc_url( get_category_link( $cats[0]->term_id ) ); ?>">
-                            <?php echo esc_html( $cats[0]->name ); ?>
-                        </a>
-                        <?php endif; ?>
-                        <span class="post-date"><?php the_time( get_option( 'date_format' ) ); ?></span>
-                        <span class="post-author"><?php esc_html_e( 'di', 'tema-effata2026' ); ?> <?php the_author_posts_link(); ?></span>
-                    </div>
+                    <?php get_template_part( 'template-parts/single-meta' ); ?>
+                    <?php endif; ?>
 
                     <!-- Immagine in evidenza -->
                     <?php if ( has_post_thumbnail() ) : ?>

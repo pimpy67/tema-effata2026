@@ -4721,3 +4721,18 @@ figure:has(.wp-image-91):hover .wp-image-91 {
 }
 
 
+
+/* ── Articolo: titolo a tutta larghezza (dal 23/10/2026) ── */
+.single-head {
+  margin-bottom: 36px;
+  padding-bottom: 8px;
+}
+.single-title--largo {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.15;
+  max-width: 1200px;
+  text-wrap: balance;
+}
+.single-head .single-meta {
+  margin-bottom: 0;
+}
