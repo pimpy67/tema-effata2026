@@ -192,6 +192,18 @@ function effata_crea_tabella_iscritti() {
 add_action('after_switch_theme', 'effata_crea_tabella_iscritti');
 add_action('admin_init', 'effata_crea_tabella_iscritti'); // sicurezza: crea se mancante
 
+// La tabella esisteva già: dbDelta non aggiunge colonne a un CREATE TABLE IF NOT EXISTS, quindi la colonna
+// «brevo» (chi è già stato mandato a Brevo) va aggiunta a mano se manca.
+function effata_colonna_brevo() {
+    global $wpdb;
+    $tabella = $wpdb->prefix . 'effata_iscritti';
+    if ($wpdb->get_var("SHOW TABLES LIKE '$tabella'") !== $tabella) return;
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabella LIKE 'brevo'")) {
+        $wpdb->query("ALTER TABLE $tabella ADD COLUMN brevo tinyint(1) NOT NULL DEFAULT 0");
+    }
+}
+add_action('admin_init', 'effata_colonna_brevo', 20);
+
 // 1b. BREVO — ogni iscritto va anche nella lista Brevo «Iscritti sito – Newsletter e Calendario»
 // (da lì partono la newsletter e le email quotidiane del Calendario dell'Avvento).
 // In wp-config.php (MAI nel tema o su GitHub):
