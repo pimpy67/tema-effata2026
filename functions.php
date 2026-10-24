@@ -182,6 +182,7 @@ function effata_crea_tabella_iscritti() {
         ip varchar(45) DEFAULT '',
         esportato tinyint(1) NOT NULL DEFAULT 0,
         data_esportazione datetime DEFAULT NULL,
+        brevo tinyint(1) NOT NULL DEFAULT 0,
         PRIMARY KEY (id),
         UNIQUE KEY email (email)
     ) $charset;";
@@ -190,6 +191,44 @@ function effata_crea_tabella_iscritti() {
 }
 add_action('after_switch_theme', 'effata_crea_tabella_iscritti');
 add_action('admin_init', 'effata_crea_tabella_iscritti'); // sicurezza: crea se mancante
+
+// 1b. BREVO — ogni iscritto va anche nella lista Brevo «Iscritti sito – Newsletter e Calendario»
+// (da lì partono la newsletter e le email quotidiane del Calendario dell'Avvento).
+// In wp-config.php (MAI nel tema o su GitHub):
+//   define('EFFATA_BREVO_API_KEY', '...');          // Brevo → Impostazioni → SMTP e API → Chiavi API
+//   define('EFFATA_BREVO_LIST_ID', 2);              // facoltativo, default 2
+//   define('EFFATA_BREVO_DOI_TEMPLATE_ID', 0);      // facoltativo: id del modello di doppia conferma
+// Senza chiave il form funziona come prima (solo database WordPress).
+function effata_brevo_iscrivi($email, $nome, $cognome) {
+    if (!defined('EFFATA_BREVO_API_KEY') || !EFFATA_BREVO_API_KEY) return false;
+    $lista = defined('EFFATA_BREVO_LIST_ID') ? (int) EFFATA_BREVO_LIST_ID : 2;
+    $attributi = array('NOME' => $nome, 'COGNOME' => $cognome);
+    $doi = defined('EFFATA_BREVO_DOI_TEMPLATE_ID') ? (int) EFFATA_BREVO_DOI_TEMPLATE_ID : 0;
+    if ($doi > 0) {
+        // Doppia conferma: Brevo manda l'email «conferma la tua iscrizione», il contatto entra in lista solo dopo il clic
+        $url = 'https://api.brevo.com/v3/contacts/doubleOptinConfirmation';
+        $corpo = array('email' => $email, 'attributes' => $attributi, 'includeListIds' => array($lista),
+                       'templateId' => $doi, 'redirectionUrl' => home_url('/iscriviti/?esito=confermato'));
+    } else {
+        $url = 'https://api.brevo.com/v3/contacts';
+        $corpo = array('email' => $email, 'attributes' => $attributi, 'listIds' => array($lista), 'updateEnabled' => true);
+    }
+    $r = wp_remote_post($url, array(
+        'timeout' => 10,
+        'headers' => array('api-key' => EFFATA_BREVO_API_KEY, 'content-type' => 'application/json', 'accept' => 'application/json'),
+        'body'    => wp_json_encode($corpo),
+    ));
+    if (is_wp_error($r)) { error_log('[Effatà Brevo] ' . $r->get_error_message()); return false; }
+    $codice = wp_remote_retrieve_response_code($r);
+    if ($codice >= 200 && $codice < 300) return true;
+    error_log('[Effatà Brevo] ' . $codice . ' ' . wp_remote_retrieve_body($r));
+    return false;
+}
+
+function effata_brevo_segna($email) {
+    global $wpdb;
+    $wpdb->update($wpdb->prefix . 'effata_iscritti', array('brevo' => 1), array('email' => $email), array('%d'), array('%s'));
+}
 
 // 2. GESTIONE FORM (prima di qualsiasi output)
 function effata_gestisci_iscrizione() {
@@ -213,6 +252,8 @@ function effata_gestisci_iscrizione() {
     // Controlla se email già presente
     $esiste = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $tabella WHERE email = %s", $email));
     if ($esiste) {
+        // Già nel database WordPress: ci assicuriamo che sia anche su Brevo
+        if (effata_brevo_iscrivi($email, $nome, $cognome)) effata_brevo_segna($email);
         wp_safe_redirect(add_query_arg('esito', 'giaiscritto', get_permalink()));
         exit;
     }
@@ -225,6 +266,9 @@ function effata_gestisci_iscrizione() {
         'privacy' => $privacy,
         'ip'      => $_SERVER['REMOTE_ADDR'] ?? '',
     ), array('%s', '%s', '%s', '%d', '%s'));
+
+    // Anche su Brevo, nella lista della newsletter e del Calendario dell'Avvento
+    if (effata_brevo_iscrivi($email, $nome, $cognome)) effata_brevo_segna($email);
 
     // Invia email di notifica a Effata
     $admin_email = get_option('admin_email');
@@ -246,8 +290,13 @@ function effata_shortcode_form_newsletter() {
       <div style="background:#fff; border-radius:12px; padding:48px 40px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
         <div style="margin-bottom:20px;"><img src="<?php echo get_template_directory_uri(); ?>/img/logo_rosso.jpg" alt="Effatà Italia" style="max-width:160px; height:auto;"></div>
         <h2 style="color:#ed1c23; font-size:1.6rem; font-weight:900; margin-bottom:12px;">Benvenuto/a nella famiglia Effatà!</h2>
-        <p style="color:#555; line-height:1.8; margin-bottom:24px;">La tua iscrizione è avvenuta con successo.<br>Riceverai presto gli aggiornamenti da Silvia e dal team di Effatà Italia!</p>
+        <p style="color:#555; line-height:1.8; margin-bottom:24px;">La tua iscrizione è avvenuta con successo.<br>Riceverai presto gli aggiornamenti da Silvia e dal team di Effatà Italia, e dal 1° al 25 dicembre ogni mattina la finestra del nostro Calendario dell'Avvento!<?php if (defined('EFFATA_BREVO_DOI_TEMPLATE_ID') && EFFATA_BREVO_DOI_TEMPLATE_ID): ?><br><strong>Controlla la tua email e conferma l'iscrizione.</strong><?php endif; ?></p>
         <a href="<?php echo home_url('/'); ?>" style="display:inline-block; background:#ed1c23; color:#fff; padding:14px 36px; border-radius:50px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none;">Torna al sito</a>
+      </div>
+    <?php elseif ($esito === 'confermato'): ?>
+      <div style="background:#fff; border-radius:12px; padding:48px 40px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+        <h2 style="color:#ed1c23; font-size:1.6rem; font-weight:900; margin-bottom:12px;">Iscrizione confermata!</h2>
+        <p style="color:#555; line-height:1.8;">Grazie! Riceverai la newsletter di Effatà e, dal 1° al 25 dicembre, ogni mattina la finestra del nostro Calendario dell'Avvento.</p>
       </div>
     <?php elseif ($esito === 'giaiscritto'): ?>
       <div style="background:#fff; border-radius:12px; padding:48px 40px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
@@ -261,7 +310,7 @@ function effata_shortcode_form_newsletter() {
       <div style="background:#fff; border-radius:12px; padding:56px 64px; box-shadow:0 8px 40px rgba(0,0,0,0.12); border-top:4px solid #ed1c23;">
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
           <img src="<?php echo get_template_directory_uri(); ?>/img/logo_rosso.jpg" alt="Effatà Italia" style="width:48px; height:48px; object-fit:contain;">
-          <p style="font-size:1rem; color:#555; line-height:1.7; margin:0;">Compila il form qui sotto e riceverai storie, novità dai nostri progetti, eventi e approfondimenti direttamente!</p>
+          <p style="font-size:1rem; color:#555; line-height:1.7; margin:0;">Compila il form qui sotto e riceverai storie, novità dai nostri progetti, eventi e approfondimenti direttamente! A dicembre, ogni mattina, anche la finestra del nostro Calendario dell'Avvento.</p>
         </div>
         <hr style="border:none; border-top:1px solid #eee; margin:0 0 32px;">
         <form method="POST" action="">
@@ -342,6 +391,16 @@ function effata_admin_iscritti_page() {
         exit;
     }
 
+    // Sincronizza con Brevo chi non c'è ancora (iscritti prima del collegamento)
+    $sincronizzati = null;
+    if (($_GET['brevo'] ?? '') === 'sincronizza' && current_user_can('manage_options')
+        && wp_verify_nonce($_GET['_wpnonce'] ?? '', 'effata_brevo_sync')) {
+        $sincronizzati = 0;
+        foreach ($wpdb->get_results("SELECT nome, cognome, email FROM $tabella WHERE brevo = 0") as $r) {
+            if (effata_brevo_iscrivi($r->email, $r->nome, $r->cognome)) { effata_brevo_segna($r->email); $sincronizzati++; }
+        }
+    }
+
     $iscritti  = $wpdb->get_results("SELECT * FROM $tabella ORDER BY data_iscrizione DESC");
     $totale    = count($iscritti);
     $nuovi     = $wpdb->get_var("SELECT COUNT(*) FROM $tabella WHERE esportato = 0");
@@ -364,6 +423,16 @@ function effata_admin_iscritti_page() {
         </p>
         <p style="color:#888; font-size:12px; margin-top:0;">
             Dopo l'esportazione gli iscritti vengono segnati come "Esportato" automaticamente.
+        </p>
+        <p>
+            <?php $su_brevo = (int) $wpdb->get_var("SELECT COUNT(*) FROM $tabella WHERE brevo = 1"); ?>
+            Su Brevo: <strong><?php echo $su_brevo; ?></strong> di <?php echo $totale; ?>
+            <?php if (defined('EFFATA_BREVO_API_KEY') && EFFATA_BREVO_API_KEY): ?>
+                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=effata-iscritti&brevo=sincronizza'), 'effata_brevo_sync')); ?>" class="button">↻ Manda a Brevo quelli che mancano</a>
+            <?php else: ?>
+                <span style="color:#c0392b;">— collegamento Brevo non attivo (manca EFFATA_BREVO_API_KEY in wp-config.php)</span>
+            <?php endif; ?>
+            <?php if ($sincronizzati !== null): ?><span style="color:#3b8c6e; font-weight:600;">Mandati ora: <?php echo $sincronizzati; ?></span><?php endif; ?>
         </p>
         <?php if ($totale === 0): ?>
             <p>Nessun iscritto ancora.</p>
