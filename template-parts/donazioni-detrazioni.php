@@ -5,6 +5,12 @@
 ?>
 <section class="donazioni">
     <div class="donazioni-inner">
+        <h2>Come fare le donazioni</h2>
+
+        <ol class="donazioni-steps">
+            <li><a href="<?php echo esc_url(home_url('/progetti/')); ?>">Scegli il progetto</a> che vuoi sostenere</li>
+            <li>Scegli il metodo di pagamento che preferisci: bonifico, carta di credito, bancomat tramite POS</li>
+        </ol>
 
         <div class="donazioni-metodi">
             <div class="donazioni-card">
