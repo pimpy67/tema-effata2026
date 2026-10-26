@@ -4736,3 +4736,124 @@ figure:has(.wp-image-91):hover .wp-image-91 {
 .single-head .single-meta {
   margin-bottom: 0;
 }
+
+/* Come aiutarci: sezione donazioni sopra il footer */
+.donazioni {
+  background-color: var(--withe);
+  padding: 80px 0;
+}
+
+.donazioni-inner {
+  width: 1160px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+  color: var(--dark);
+}
+
+.donazioni h2 {
+  font-size: 36px;
+  font-weight: 900;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.donazioni-steps {
+  max-width: 760px;
+  margin: 0 auto 50px;
+  padding-left: 24px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.donazioni-steps li {
+  margin-bottom: 8px;
+}
+
+.donazioni-metodi {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.donazioni-card {
+  background-color: var(--primary);
+  border-top: 4px solid var(--red);
+  border-radius: 8px;
+  padding: 32px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.donazioni-card:last-child {
+  border-top-color: var(--green);
+}
+
+.donazioni-card h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.donazioni-card p {
+  margin-bottom: 12px;
+}
+
+.donazioni-iban {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--red);
+  word-break: break-all;
+}
+
+.donazioni-card a,
+.donazioni-contatti a {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.donazioni-contatti {
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .donazioni {
+    padding: 50px 0;
+  }
+
+  .donazioni h2 {
+    font-size: 28px;
+  }
+
+  .donazioni-metodi {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .donazioni-card {
+    padding: 24px;
+  }
+}
+
+/* Detrazioni e 5x1000: ancora dal link nella sezione donazioni */
+.detrazioni {
+  background-color: var(--primary);
+  scroll-margin-top: 100px;
+}
+
+.donazioni-intro {
+  max-width: 900px;
+  margin: 0 auto 40px;
+  font-size: 18px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.donazioni-card .donazioni-steps {
+  max-width: none;
+  margin: 0 0 16px;
+  font-size: 16px;
+}
