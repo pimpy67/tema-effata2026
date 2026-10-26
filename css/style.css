@@ -4857,3 +4857,10 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   margin: 0 0 16px;
   font-size: 16px;
 }
+
+/* Link dentro il box scuro: bianchi e sottolineati, leggibili su sfondo scuro */
+.cta-donazione a:not(.button) {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: underline;
+}
