@@ -875,3 +875,10 @@ add_filter( 'option_wpseo_social', function( $options ) {
     $options['twitter']   = false;
     return $options;
 } );
+// Pagina Dona: blocco donazioni e detrazioni dopo il contenuto della pagina
+add_filter('the_content', function ($contenuto) {
+    if (!is_page('dona') || !in_the_loop() || !is_main_query()) return $contenuto;
+    ob_start();
+    get_template_part('template-parts/donazioni-detrazioni');
+    return $contenuto . ob_get_clean();
+});
