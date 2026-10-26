@@ -22,9 +22,6 @@ get_header(); ?>
         endwhile; endif; ?>
     </div>
 
-    <!-- Come fare le donazioni -->
-    <?php get_template_part('template-parts/cta-donazione'); ?>
-
 </main>
 
 <?php get_footer(); ?>
