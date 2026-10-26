@@ -53,7 +53,7 @@
 
                 <div class="col-4 footer-link">
                     <h6><a href="#"><?php esc_html_e('Cookie Policy', 'tema-effata2026'); ?></a></h6>
-                    <h6><a href="#"><?php esc_html_e('Agevolazioni fiscali per i donatori', 'tema-effata2026'); ?></a></h6>
+                    <h6><a href="<?php echo esc_url(home_url('/dona/')); ?>"><?php esc_html_e('Agevolazioni fiscali per i donatori', 'tema-effata2026'); ?></a></h6>
                 </div> <!--End col-4-->
 
                 <div class="col-4">
