@@ -5,7 +5,7 @@
 get_header(); ?>
  
     <main role="main">
-/**QUESTO PER CAMBIARE E LA IMMAGINE IN EVIDENZA CAMBIANDO L'IMMAGINE DELLA HERO */
+<?php /* QUESTO PER CAMBIARE E LA IMMAGINE IN EVIDENZA CAMBIANDO L'IMMAGINE DELLA HERO */ ?>
     <?php $url = wp_get_attachment_url( get_post_thumbnail_id($post->ID) ); ?>
 
         <div class="hero-progetti" style="background-image: url(<?php echo $url; ?>);">
@@ -31,6 +31,9 @@ get_header(); ?>
 
             </div>
         </section>
+
+        <!-- Come fare le donazioni -->
+        <?php get_template_part('template-parts/cta-donazione'); ?>
     </main>
 
 <?php get_footer(); ?>
