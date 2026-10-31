@@ -23,6 +23,9 @@ for f in \
   archive.php \
   single.php \
   template-parts/single-meta.php \
+  template-parts/cta-donazione.php \
+  template-parts/donazioni-detrazioni.php \
+  template-hero.php \
   footer.php \
   header.php \
   functions.php

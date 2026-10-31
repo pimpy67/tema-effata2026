@@ -4864,3 +4864,9 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   font-weight: 700;
   text-decoration: underline;
 }
+
+/* Articolo Calendario dell'Avvento (post 1893): titolo su tre righe, centrato */
+.postid-1893 .single-title {
+  text-align: center;
+  text-wrap: balance;
+}
