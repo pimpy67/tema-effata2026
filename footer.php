@@ -47,7 +47,6 @@
                 <div class="col-4 footer-link">
                     <h6><a href="<?php echo esc_url(home_url('/iscriviti/')); ?>" style="color:#ed1c23; font-weight:700;"><?php esc_html_e('📩 Iscriviti alla newsletter', 'tema-effata2026'); ?></a></h6>
                     <h6><a href="<?php the_permalink(3);?>"><?php esc_html_e('Privacy Policy', 'tema-effata2026'); ?></a></h6>
-                    <h6><a href="#"><?php esc_html_e('Dichiarazione di accessibilità', 'tema-effata2026'); ?></a></h6>
                 </div> <!--End col-4-->
 
 
