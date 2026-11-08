@@ -52,7 +52,13 @@
 
 
                 <div class="col-4 footer-link">
-                    <h6><a href="#"><?php esc_html_e('Cookie Policy', 'tema-effata2026'); ?></a></h6>
+                    <?php
+                    // Cookie Policy generata da Complianz (pagina cookie-policy-ue)
+                    $cookie_policy = get_page_by_path('cookie-policy-ue');
+                    $cookie_url = $cookie_policy ? get_permalink($cookie_policy) : home_url('/cookie-policy-ue/');
+                    ?>
+                    <h6><a href="<?php echo esc_url($cookie_url); ?>"><?php esc_html_e('Cookie Policy', 'tema-effata2026'); ?></a></h6>
+                    <h6><a href="#" class="cmplz-show-banner"><?php esc_html_e('Preferenze cookie', 'tema-effata2026'); ?></a></h6>
                     <h6><a href="<?php echo esc_url(home_url('/dona/')); ?>"><?php esc_html_e('Agevolazioni fiscali per i donatori', 'tema-effata2026'); ?></a></h6>
                 </div> <!--End col-4-->
 
