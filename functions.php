@@ -242,8 +242,91 @@ function effata_brevo_segna($email) {
     $wpdb->update($wpdb->prefix . 'effata_iscritti', array('brevo' => 1), array('email' => $email), array('%d'), array('%s'));
 }
 
+// DISISCRIZIONE — colonna «disiscritto_il» (NULL = iscritto). Una volta sola, poi nessuna query in più.
+function effata_colonna_disiscrizione() {
+    if (get_option('effata_db_disiscrizione') === '1') return;
+    global $wpdb;
+    $tabella = $wpdb->prefix . 'effata_iscritti';
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabella LIKE 'disiscritto_il'")) {
+        $wpdb->query("ALTER TABLE $tabella ADD COLUMN disiscritto_il datetime DEFAULT NULL");
+    }
+    update_option('effata_db_disiscrizione', '1');
+}
+add_action('init', 'effata_colonna_disiscrizione');
+
+// Brevo: blocca (true) o sblocca (false) un contatto. 404 = non presente su Brevo, nulla da fare.
+function effata_brevo_blacklist($email, $blocca) {
+    if (!defined('EFFATA_BREVO_API_KEY') || !EFFATA_BREVO_API_KEY) return false;
+    $r = wp_remote_request('https://api.brevo.com/v3/contacts/' . rawurlencode($email), array(
+        'method'  => 'PUT',
+        'headers' => array('api-key' => EFFATA_BREVO_API_KEY, 'content-type' => 'application/json', 'accept' => 'application/json'),
+        'body'    => wp_json_encode(array('emailBlacklisted' => (bool) $blocca)),
+        'timeout' => 15,
+    ));
+    if (is_wp_error($r)) { error_log('[Effatà Brevo] ' . $r->get_error_message()); return false; }
+    $codice = wp_remote_retrieve_response_code($r);
+    if ($codice >= 300 && $codice != 404) error_log('[Effatà Brevo] blacklist ' . $codice . ' ' . wp_remote_retrieve_body($r));
+    return $codice < 300 || $codice == 404;
+}
+
+// Token di conferma: valido 48 ore, una sola volta. Non si salva l'email nel link, solo il token.
+function effata_token_disiscrizione_pulito($grezzo) {
+    return preg_replace('/[^A-Za-z0-9]/', '', (string) $grezzo);
+}
+
+// Richiesta dal form «Vuoi toglierti dalla lista?»: manda il link di conferma.
+// La risposta è sempre la stessa, per non dire a chi scrive se un'email è iscritta.
+function effata_richiedi_disiscrizione() {
+    if (!wp_verify_nonce($_POST['effata_disiscrivi_nonce'], 'effata_disiscrivi')) {
+        wp_safe_redirect(add_query_arg('esito', 'errore', home_url('/iscriviti/')));
+        exit;
+    }
+    global $wpdb;
+    $tabella = $wpdb->prefix . 'effata_iscritti';
+    $email = sanitize_email(trim($_POST['email_disiscrizione'] ?? ''));
+    if (is_email($email)) {
+        $riga = $wpdb->get_row($wpdb->prepare("SELECT id, disiscritto_il FROM $tabella WHERE email = %s", $email));
+        if ($riga && !$riga->disiscritto_il) {
+            $token = wp_generate_password(40, false);
+            set_transient('effata_disiscr_' . md5($token), $email, 2 * DAY_IN_SECONDS);
+            $link = add_query_arg('effata_conferma_disiscrizione', $token, home_url('/iscriviti/'));
+            wp_mail($email,
+                'Conferma la disiscrizione da Effatà',
+                "Hai chiesto di toglierti dalla newsletter e dal Calendario dell'Avvento di Effatà.\n\n"
+                . "Per confermare apri questo link (valido 48 ore):\n$link\n\n"
+                . "Se non sei stato tu, ignora questa email: non cambia nulla.");
+        }
+    }
+    wp_safe_redirect(add_query_arg('esito', 'disiscrizione_inviata', home_url('/iscriviti/')));
+    exit;
+}
+
+// Conferma dal pulsante della pagina (POST, non GET: i filtri antivirus delle email non confermano per sbaglio)
+function effata_conferma_disiscrizione() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['effata_conferma_nonce'])) return;
+    if (!wp_verify_nonce($_POST['effata_conferma_nonce'], 'effata_conferma_disiscrizione')) {
+        wp_safe_redirect(add_query_arg('esito', 'link_scaduto', home_url('/iscriviti/')));
+        exit;
+    }
+    $token = effata_token_disiscrizione_pulito($_POST['token'] ?? '');
+    $email = $token ? get_transient('effata_disiscr_' . md5($token)) : false;
+    if (!$email) {
+        wp_safe_redirect(add_query_arg('esito', 'link_scaduto', home_url('/iscriviti/')));
+        exit;
+    }
+    delete_transient('effata_disiscr_' . md5($token)); // usabile una volta sola
+    global $wpdb;
+    $tabella = $wpdb->prefix . 'effata_iscritti';
+    $wpdb->query($wpdb->prepare("UPDATE $tabella SET disiscritto_il = %s WHERE email = %s", current_time('mysql'), $email));
+    effata_brevo_blacklist($email, true);
+    wp_safe_redirect(add_query_arg('esito', 'disiscritto', home_url('/iscriviti/')));
+    exit;
+}
+add_action('init', 'effata_conferma_disiscrizione');
+
 // 2. GESTIONE FORM (prima di qualsiasi output)
 function effata_gestisci_iscrizione() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['effata_disiscrivi_nonce'])) effata_richiedi_disiscrizione();
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['effata_iscrivi_nonce'])) return;
     if (!wp_verify_nonce($_POST['effata_iscrivi_nonce'], 'effata_iscrivi')) return;
 
@@ -262,8 +345,16 @@ function effata_gestisci_iscrizione() {
     $tabella = $wpdb->prefix . 'effata_iscritti';
 
     // Controlla se email già presente
-    $esiste = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $tabella WHERE email = %s", $email));
-    if ($esiste) {
+    $riga = $wpdb->get_row($wpdb->prepare("SELECT id, disiscritto_il FROM $tabella WHERE email = %s", $email));
+    if ($riga) {
+        // Chi si era disiscritto e si reiscrive dà un nuovo consenso esplicito: si riattiva
+        if ($riga->disiscritto_il) {
+            $wpdb->query("UPDATE $tabella SET disiscritto_il = NULL WHERE id = " . (int) $riga->id);
+            effata_brevo_blacklist($email, false);
+            if (effata_brevo_iscrivi($email, $nome, $cognome)) effata_brevo_segna($email);
+            wp_safe_redirect(add_query_arg('esito', 'ok', get_permalink()));
+            exit;
+        }
         // Già nel database WordPress: ci assicuriamo che sia anche su Brevo
         if (effata_brevo_iscrivi($email, $nome, $cognome)) effata_brevo_segna($email);
         wp_safe_redirect(add_query_arg('esito', 'giaiscritto', get_permalink()));
@@ -298,6 +389,24 @@ function effata_shortcode_form_newsletter() {
     $esito = $_GET['esito'] ?? '';
     ob_start();
 
+    // Link di conferma della disiscrizione: se valido mostra il pulsante, altrimenti «link scaduto»
+    $token_conferma = effata_token_disiscrizione_pulito($_GET['effata_conferma_disiscrizione'] ?? '');
+    if ($token_conferma && !get_transient('effata_disiscr_' . md5($token_conferma))) {
+        $esito = 'link_scaduto';
+        $token_conferma = '';
+    }
+    if ($token_conferma): ?>
+      <div style="background:#fff; border-radius:12px; padding:48px 40px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+        <h2 style="color:#313131; font-size:1.5rem; font-weight:900; margin-bottom:12px;">Confermi la disiscrizione?</h2>
+        <p style="color:#555; line-height:1.8; margin-bottom:24px;">Smetterai di ricevere la newsletter e le email del Calendario dell'Avvento.</p>
+        <form method="POST" action="">
+          <?php wp_nonce_field('effata_conferma_disiscrizione', 'effata_conferma_nonce'); ?>
+          <input type="hidden" name="token" value="<?php echo esc_attr($token_conferma); ?>">
+          <button type="submit" style="background:#ed1c23; color:#fff; border:none; padding:14px 36px; border-radius:50px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; cursor:pointer;">Sì, disiscrivimi</button>
+        </form>
+      </div>
+    <?php return ob_get_clean(); endif;
+
     if ($esito === 'ok'): ?>
       <div style="background:#fff; border-radius:12px; padding:48px 40px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
         <div style="margin-bottom:20px;"><img src="<?php echo get_template_directory_uri(); ?>/img/logo_rosso.jpg" alt="Effatà Italia" style="max-width:160px; height:auto;"></div>
@@ -315,6 +424,18 @@ function effata_shortcode_form_newsletter() {
         <h2 style="color:#3b8c6e; font-size:1.4rem; font-weight:900; margin-bottom:12px;">Sei già tra i nostri!</h2>
         <p style="color:#555; line-height:1.8;">Questa email è già iscritta alla newsletter di Effatà.<br>Controlla la tua casella per i prossimi aggiornamenti.</p>
       </div>
+    <?php elseif ($esito === 'disiscritto'): ?>
+      <div style="background:#fff; border-radius:12px; padding:48px 40px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+        <h2 style="color:#313131; font-size:1.5rem; font-weight:900; margin-bottom:12px;">Disiscrizione confermata</h2>
+        <p style="color:#555; line-height:1.8;">Non riceverai più la newsletter né le email del Calendario dell'Avvento. Puoi iscriverti di nuovo in qualsiasi momento.</p>
+      </div>
+    <?php elseif ($esito === 'disiscrizione_inviata'): ?>
+      <div style="background:#fff; border-radius:12px; padding:48px 40px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+        <h2 style="color:#313131; font-size:1.5rem; font-weight:900; margin-bottom:12px;">Controlla la tua email</h2>
+        <p style="color:#555; line-height:1.8;">Se l'indirizzo è tra i nostri iscritti, ti abbiamo inviato un link per confermare la disiscrizione. Il link vale 48 ore.</p>
+      </div>
+    <?php elseif ($esito === 'link_scaduto'): ?>
+      <div style="background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:20px 24px; color:#c0392b; font-size:15px; line-height:1.6;">Il link non è più valido o è già stato usato. Se vuoi ancora toglierti dalla lista, richiedi un nuovo link più sotto.</div>
     <?php else: ?>
       <?php if ($esito === 'errore'): ?>
         <div style="background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:14px 20px; margin-bottom:24px; color:#c0392b; font-size:14px;">⚠ Controlla i campi: nome, email valida e consenso privacy sono obbligatori.</div>
@@ -346,6 +467,15 @@ function effata_shortcode_form_newsletter() {
           <div style="text-align:center;"><button type="submit" class="btn-newsletter-submit" style="display:inline-block; background:#ed1c23; color:#fff; border:none; padding:14px 32px; border-radius:50px; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:1px; cursor:pointer; font-family:inherit; box-shadow:0 6px 20px rgba(237,28,35,0.30);">Sì, voglio unirmi a Effatà</button></div>
         </form>
       </div>
+      <div id="disiscrivi" style="background:#fff; border-radius:12px; padding:32px 40px; margin-top:24px; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+        <h3 style="color:#313131; font-size:1.1rem; font-weight:700; margin:0 0 8px;">Vuoi toglierti dalla lista?</h3>
+        <p style="color:#666; font-size:14px; line-height:1.6; margin:0 0 16px;">Inserisci la tua email: ti mandiamo un link per confermare la disiscrizione dalla newsletter e dal Calendario dell'Avvento.</p>
+        <form method="POST" action="">
+          <?php wp_nonce_field('effata_disiscrivi', 'effata_disiscrivi_nonce'); ?>
+          <input type="email" name="email_disiscrizione" required placeholder="la-tua@email.it" autocomplete="email" style="width:100%; padding:12px 16px; border:2px solid #e5e5e5; border-radius:8px; font-size:15px; font-family:inherit; box-sizing:border-box; margin-bottom:16px;">
+          <button type="submit" style="background:#313131; color:#fff; border:none; padding:12px 28px; border-radius:50px; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:1px; cursor:pointer;">Invia il link di conferma</button>
+        </form>
+      </div>
       <p style="text-align:center; font-size:12px; color:#aaa; margin-top:20px; line-height:1.7;">Effatà Italia Charity Organization ODV · C.F. 92050910261<br>Nessuno spam · Disiscrizione in qualsiasi momento</p>
     <?php endif;
     return ob_get_clean();
@@ -375,7 +505,7 @@ function effata_admin_iscritti_page() {
     $export = $_GET['export'] ?? '';
     if (in_array($export, array('csv', 'csv_nuovi')) && current_user_can('manage_options')) {
         $solo_nuovi = ($export === 'csv_nuovi');
-        $where = $solo_nuovi ? "WHERE esportato = 0" : "";
+        $where = "WHERE disiscritto_il IS NULL" . ($solo_nuovi ? " AND esportato = 0" : "");
         $iscritti = $wpdb->get_results("SELECT id, nome, cognome, email, data_iscrizione FROM $tabella $where ORDER BY data_iscrizione DESC", ARRAY_A);
 
         // Segna come esportati
@@ -408,7 +538,7 @@ function effata_admin_iscritti_page() {
     if (($_GET['brevo'] ?? '') === 'sincronizza' && current_user_can('manage_options')
         && wp_verify_nonce($_GET['_wpnonce'] ?? '', 'effata_brevo_sync')) {
         $sincronizzati = 0;
-        foreach ($wpdb->get_results("SELECT nome, cognome, email FROM $tabella WHERE brevo = 0") as $r) {
+        foreach ($wpdb->get_results("SELECT nome, cognome, email FROM $tabella WHERE brevo = 0 AND disiscritto_il IS NULL") as $r) {
             if (effata_brevo_iscrivi($r->email, $r->nome, $r->cognome)) { effata_brevo_segna($r->email); $sincronizzati++; }
         }
     }
