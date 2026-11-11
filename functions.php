@@ -214,16 +214,17 @@ add_action('admin_init', 'effata_colonna_brevo', 20);
 function effata_brevo_iscrivi($email, $nome, $cognome) {
     if (!defined('EFFATA_BREVO_API_KEY') || !EFFATA_BREVO_API_KEY) return false;
     $lista = defined('EFFATA_BREVO_LIST_ID') ? (int) EFFATA_BREVO_LIST_ID : 2;
-    $attributi = array('NOME' => $nome, 'COGNOME' => $cognome);
+    // Solo gli attributi compilati: un nome vuoto non deve sovrascrivere quello già presente su Brevo
+    $attributi = array_filter(array('NOME' => $nome, 'COGNOME' => $cognome), function ($v) { return $v !== ''; });
     $doi = defined('EFFATA_BREVO_DOI_TEMPLATE_ID') ? (int) EFFATA_BREVO_DOI_TEMPLATE_ID : 0;
     if ($doi > 0) {
         // Doppia conferma: Brevo manda l'email «conferma la tua iscrizione», il contatto entra in lista solo dopo il clic
         $url = 'https://api.brevo.com/v3/contacts/doubleOptinConfirmation';
-        $corpo = array('email' => $email, 'attributes' => $attributi, 'includeListIds' => array($lista),
+        $corpo = array('email' => $email, 'attributes' => (object) $attributi, 'includeListIds' => array($lista),
                        'templateId' => $doi, 'redirectionUrl' => home_url('/iscriviti/?esito=confermato'));
     } else {
         $url = 'https://api.brevo.com/v3/contacts';
-        $corpo = array('email' => $email, 'attributes' => $attributi, 'listIds' => array($lista), 'updateEnabled' => true);
+        $corpo = array('email' => $email, 'attributes' => (object) $attributi, 'listIds' => array($lista), 'updateEnabled' => true);
     }
     $r = wp_remote_post($url, array(
         'timeout' => 10,
@@ -242,6 +243,166 @@ function effata_brevo_segna($email) {
     $wpdb->update($wpdb->prefix . 'effata_iscritti', array('brevo' => 1), array('email' => $email), array('%d'), array('%s'));
 }
 
+// 1c. COLONNE «scelta» (SI/NO) e «fonte» — aggiunte senza toccare i dati esistenti.
+// Le righe già presenti ricevono automaticamente scelta = 'SI' (default), quindi restano iscritte.
+// NO = lista nera locale: resta nella tabella ma non va su Brevo e non entra nell'export VERIF!CO.
+function effata_colonne_scelta_fonte() {
+    global $wpdb;
+    $tabella = $wpdb->prefix . 'effata_iscritti';
+    if ($wpdb->get_var("SHOW TABLES LIKE '$tabella'") !== $tabella) return;
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabella LIKE 'scelta'")) {
+        $wpdb->query("ALTER TABLE $tabella ADD COLUMN scelta varchar(3) NOT NULL DEFAULT 'SI'");
+    }
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabella LIKE 'fonte'")) {
+        $wpdb->query("ALTER TABLE $tabella ADD COLUMN fonte varchar(100) NOT NULL DEFAULT ''");
+    }
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabella LIKE 'data_scelta'")) {
+        $wpdb->query("ALTER TABLE $tabella ADD COLUMN data_scelta datetime NULL DEFAULT NULL");
+    }
+    // Consenso facoltativo a comunicazioni informative/promozionali anche automatizzate e tracciate
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabella LIKE 'consenso_comunicazioni'")) {
+        $wpdb->query("ALTER TABLE $tabella ADD COLUMN consenso_comunicazioni tinyint(1) NOT NULL DEFAULT 0");
+    }
+}
+add_action('admin_init', 'effata_colonne_scelta_fonte', 21);
+
+// 2b. PAGINA DI CONFERMA /conferma-newsletter/ — [effata_conferma_newsletter]
+// Parametri URL: scelta (si|no), e (email), n (nome), c (cognome).
+// Il consenso viene registrato SOLO al clic sul pulsante (POST con nonce), mai al caricamento della pagina.
+function effata_fonte_newsletter() {
+    return 'newsletter-novembre-2026';
+}
+
+function effata_pulisci_nome($testo) {
+    $testo = sanitize_text_field(wp_unslash((string) $testo));
+    return mb_convert_case(trim($testo), MB_CASE_TITLE, 'UTF-8');
+}
+
+function effata_gestisci_conferma_newsletter() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['effata_conferma_nonce'])) return;
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['effata_conferma_nonce'])), 'effata_conferma')) return;
+
+    $scelta  = (isset($_POST['scelta']) && $_POST['scelta'] === 'no') ? 'NO' : 'SI';
+    $nome    = effata_pulisci_nome($_POST['nome'] ?? '');
+    $cognome = effata_pulisci_nome($_POST['cognome'] ?? '');
+    $email   = sanitize_email(wp_unslash($_POST['email'] ?? ''));
+    $pagina  = home_url('/conferma-newsletter/');
+
+    // Nome e cognome facoltativi: serve solo un'email valida
+    if (!is_email($email)) {
+        wp_safe_redirect(add_query_arg(array(
+            'esito' => 'errore', 'scelta' => strtolower($scelta), 'n' => $nome, 'c' => $cognome, 'e' => '',
+        ), $pagina));
+        exit;
+    }
+
+    global $wpdb;
+    effata_colonne_scelta_fonte();
+    $tabella = $wpdb->prefix . 'effata_iscritti';
+    $fonte   = effata_fonte_newsletter();
+    $ora     = current_time('mysql');
+
+    // Evita doppioni: se l'email c'è già, aggiorno la riga esistente invece di inserirne un'altra
+    $esistente = $wpdb->get_row($wpdb->prepare("SELECT id FROM $tabella WHERE email = %s", $email));
+    if ($esistente) {
+        $wpdb->update($tabella, array('scelta' => $scelta, 'fonte' => $fonte, 'data_scelta' => $ora),
+            array('id' => (int) $esistente->id), array('%s', '%s', '%s'), array('%d'));
+    } else {
+        $wpdb->insert($tabella, array(
+            'nome'        => $nome,
+            'cognome'     => $cognome,
+            'email'       => $email,
+            'privacy'     => $scelta === 'SI' ? 1 : 0,
+            'ip'          => $_SERVER['REMOTE_ADDR'] ?? '',
+            'scelta'      => $scelta,
+            'fonte'       => $fonte,
+            'data_scelta' => $ora,
+        ), array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s'));
+    }
+
+    // Solo chi dice SI va su Brevo (stessa funzione del pulsante «Manda a Brevo»)
+    if ($scelta === 'SI' && effata_brevo_iscrivi($email, $nome, $cognome)) {
+        effata_brevo_segna($email);
+    }
+
+    wp_safe_redirect(add_query_arg('esito', 'ok', $pagina));
+    exit;
+}
+add_action('init', 'effata_gestisci_conferma_newsletter');
+
+function effata_shortcode_conferma_newsletter() {
+    $esito   = sanitize_text_field(wp_unslash($_GET['esito'] ?? ''));
+    $scelta  = $_GET['scelta'] ?? '';
+    $nome    = effata_pulisci_nome($_GET['n'] ?? '');
+    $cognome = effata_pulisci_nome($_GET['c'] ?? '');
+    $email   = sanitize_email(wp_unslash($_GET['e'] ?? ''));
+    $pagina  = home_url('/conferma-newsletter/');
+    $saluto  = trim('Ciao ' . $nome . ' ' . $cognome);
+    $saluto  = ($saluto === 'Ciao' ? 'Ciao' : $saluto) . ',';
+
+    ob_start(); ?>
+<div class="effata-conferma">
+<style>
+.effata-conferma { box-sizing:border-box; max-width:768px; margin:-110px auto 0; padding:0 16px; position:relative; z-index:2; }
+.effata-conferma * { box-sizing:border-box; }
+.effata-conferma__card { background:#fff; border-radius:16px; padding:40px 24px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.14); }
+.effata-conferma__saluto { font-size:22px; line-height:1.4; color:#313131; margin:0 0 28px; text-align:center; }
+.effata-conferma__titolo { color:#ed1c23; font-size:26px; font-weight:900; line-height:1.3; margin:0; }
+.effata-conferma__testo { color:#555; font-size:18px; line-height:1.6; margin:0; }
+.effata-conferma__errore { background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:14px 20px; margin:0 auto 20px; max-width:768px; color:#c0392b; font-size:16px; line-height:1.5; }
+.effata-conferma__campo { margin:0 0 28px; text-align:left; }
+.effata-conferma__label { display:block; font-size:18px; font-weight:600; color:#313131; margin-bottom:8px; }
+.effata-conferma__input { display:block; width:100%; height:52px; padding:0 16px; border:2px solid #e5e5e5; border-radius:10px; font-size:18px; font-family:inherit; color:#313131; }
+.effata-conferma__btn { display:block; width:100%; max-width:420px; min-height:58px; margin:0 auto; padding:14px 24px; background:#ed1c23; color:#fff; border:none; border-radius:50px; font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:1px; line-height:1.2; cursor:pointer; font-family:inherit; }
+.effata-conferma__btn:hover { background:#d11920; }
+@media (min-width:769px) {
+  .effata-conferma { margin-top:-120px; }
+  .effata-conferma__card { padding:48px 56px; }
+  .effata-conferma__saluto { font-size:20px; }
+}
+body:has(.effata-conferma) .hero-progetti { min-height:220px; }
+</style>
+<?php if ($esito === 'ok'): ?>
+      <div class="effata-conferma__card">
+        <h2 class="effata-conferma__titolo">Grazie, abbiamo registrato la tua scelta.</h2>
+      </div>
+    <?php elseif (!in_array($scelta, array('si', 'no'), true)): ?>
+      <div class="effata-conferma__card">
+        <p class="effata-conferma__testo">Questo link non è valido. Puoi iscriverti dal sito di Effatà.</p>
+      </div>
+    <?php else: ?>
+      <?php if ($esito === 'errore'): ?>
+        <div class="effata-conferma__errore">⚠ Controlla il campo email: serve un indirizzo valido.</div>
+      <?php endif; ?>
+      <div class="effata-conferma__card">
+        <?php if ($scelta === 'si'): ?>
+          <p class="effata-conferma__saluto"><?php echo esc_html($saluto); ?> confermi di voler ricevere la newsletter e il calendario di Effatà?</p>
+        <?php else: ?>
+          <p class="effata-conferma__saluto"><?php echo esc_html($saluto); ?> vuoi non ricevere più la newsletter e il calendario di Effatà?</p>
+        <?php endif; ?>
+        <form method="POST" action="<?php echo esc_url($pagina); ?>">
+          <?php wp_nonce_field('effata_conferma', 'effata_conferma_nonce'); ?>
+          <input type="hidden" name="scelta" value="<?php echo esc_attr($scelta); ?>">
+          <input type="hidden" name="nome" value="<?php echo esc_attr($nome); ?>">
+          <input type="hidden" name="cognome" value="<?php echo esc_attr($cognome); ?>">
+          <?php if ($email !== ''): ?>
+            <input type="hidden" name="email" value="<?php echo esc_attr($email); ?>">
+          <?php else: ?>
+            <div class="effata-conferma__campo">
+              <label for="email" class="effata-conferma__label">Scrivi la tua email</label>
+              <input type="email" id="email" name="email" required placeholder="la-tua@email.it" class="effata-conferma__input">
+            </div>
+          <?php endif; ?>
+          <button type="submit" class="effata-conferma__btn"><?php echo $scelta === 'si' ? 'Confermo' : 'Non voglio più riceverle'; ?></button>
+        </form>
+      </div>
+    <?php endif; ?>
+</div>
+<?php
+    return ob_get_clean();
+}
+add_shortcode('effata_conferma_newsletter', 'effata_shortcode_conferma_newsletter');
+
 // 2. GESTIONE FORM (prima di qualsiasi output)
 function effata_gestisci_iscrizione() {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['effata_iscrivi_nonce'])) return;
@@ -251,6 +412,8 @@ function effata_gestisci_iscrizione() {
     $cognome = sanitize_text_field(trim($_POST['cognome'] ?? ''));
     $email   = sanitize_email(trim($_POST['email'] ?? ''));
     $privacy = isset($_POST['privacy']) ? 1 : 0;
+    // Consenso separato e facoltativo: non condiziona l'iscrizione alla newsletter
+    $consenso_comunicazioni = isset($_POST['consenso_comunicazioni']) ? 1 : 0;
 
     // Validazione
     if (empty($nome) || empty($cognome) || !is_email($email) || !$privacy) {
@@ -262,8 +425,17 @@ function effata_gestisci_iscrizione() {
     $tabella = $wpdb->prefix . 'effata_iscritti';
 
     // Controlla se email già presente
-    $esiste = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $tabella WHERE email = %s", $email));
+    effata_colonne_scelta_fonte();
+    $esiste = $wpdb->get_row($wpdb->prepare("SELECT id, scelta FROM $tabella WHERE email = %s", $email));
     if ($esiste) {
+        // Era in lista nera (NO): il form normale è una nuova richiesta esplicita, quindi la riattiva
+        if ($esiste->scelta === 'NO') {
+            $wpdb->update($tabella, array('scelta' => 'SI', 'privacy' => 1, 'consenso_comunicazioni' => $consenso_comunicazioni, 'brevo' => 0, 'data_scelta' => current_time('mysql')),
+                array('id' => (int) $esiste->id), array('%s', '%d', '%d', '%d', '%s'), array('%d'));
+            if (effata_brevo_iscrivi($email, $nome, $cognome)) effata_brevo_segna($email);
+            wp_safe_redirect(add_query_arg('esito', 'ok', get_permalink()));
+            exit;
+        }
         // Già nel database WordPress: ci assicuriamo che sia anche su Brevo
         if (effata_brevo_iscrivi($email, $nome, $cognome)) effata_brevo_segna($email);
         wp_safe_redirect(add_query_arg('esito', 'giaiscritto', get_permalink()));
@@ -272,12 +444,14 @@ function effata_gestisci_iscrizione() {
 
     // Salva nel database
     $wpdb->insert($tabella, array(
-        'nome'    => $nome,
-        'cognome' => $cognome,
-        'email'   => $email,
-        'privacy' => $privacy,
-        'ip'      => $_SERVER['REMOTE_ADDR'] ?? '',
-    ), array('%s', '%s', '%s', '%d', '%s'));
+        'nome'        => $nome,
+        'cognome'     => $cognome,
+        'email'       => $email,
+        'privacy'                => $privacy,
+        'consenso_comunicazioni' => $consenso_comunicazioni,
+        'ip'                     => $_SERVER['REMOTE_ADDR'] ?? '',
+        'data_scelta'            => current_time('mysql'),
+    ), array('%s', '%s', '%s', '%d', '%d', '%s', '%s'));
 
     // Anche su Brevo, nella lista della newsletter e del Calendario dell'Avvento
     if (effata_brevo_iscrivi($email, $nome, $cognome)) effata_brevo_segna($email);
@@ -343,6 +517,10 @@ function effata_shortcode_form_newsletter() {
             <input type="checkbox" id="privacy" name="privacy" required style="width:18px; height:18px; margin-top:2px; accent-color:#ed1c23; flex-shrink:0; cursor:pointer;">
             <label for="privacy" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Ho letto e accetto la <a href="<?php echo home_url('/privacy-policy'); ?>" target="_blank" style="color:#ed1c23; text-decoration:underline;">Privacy Policy</a> di Effatà Italia. <span style="color:#ed1c23;">*</span></label>
           </div>
+          <div style="margin-bottom:28px; display:flex; align-items:flex-start; gap:12px;">
+            <input type="checkbox" id="consenso_comunicazioni" name="consenso_comunicazioni" value="1" style="width:18px; height:18px; margin-top:2px; accent-color:#ed1c23; flex-shrink:0; cursor:pointer;">
+            <label for="consenso_comunicazioni" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Ho letto e compreso la <a href="<?php echo home_url('/privacy-policy'); ?>" target="_blank" style="color:#ed1c23; text-decoration:underline;">Privacy Policy</a> e acconsento alla ricezione di comunicazioni informative e promozionali anche con sistemi automatizzati e tracciati.</label>
+          </div>
           <div style="text-align:center;"><button type="submit" class="btn-newsletter-submit" style="display:inline-block; background:#ed1c23; color:#fff; border:none; padding:14px 32px; border-radius:50px; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:1px; cursor:pointer; font-family:inherit; box-shadow:0 6px 20px rgba(237,28,35,0.30);">Sì, voglio unirmi a Effatà</button></div>
         </form>
       </div>
@@ -375,7 +553,7 @@ function effata_admin_iscritti_page() {
     $export = $_GET['export'] ?? '';
     if (in_array($export, array('csv', 'csv_nuovi')) && current_user_can('manage_options')) {
         $solo_nuovi = ($export === 'csv_nuovi');
-        $where = $solo_nuovi ? "WHERE esportato = 0" : "";
+        $where = $solo_nuovi ? "WHERE esportato = 0 AND scelta = 'SI'" : "WHERE scelta = 'SI'";
         $iscritti = $wpdb->get_results("SELECT id, nome, cognome, email, data_iscrizione FROM $tabella $where ORDER BY data_iscrizione DESC", ARRAY_A);
 
         // Segna come esportati
@@ -408,14 +586,16 @@ function effata_admin_iscritti_page() {
     if (($_GET['brevo'] ?? '') === 'sincronizza' && current_user_can('manage_options')
         && wp_verify_nonce($_GET['_wpnonce'] ?? '', 'effata_brevo_sync')) {
         $sincronizzati = 0;
-        foreach ($wpdb->get_results("SELECT nome, cognome, email FROM $tabella WHERE brevo = 0") as $r) {
+        foreach ($wpdb->get_results("SELECT nome, cognome, email FROM $tabella WHERE brevo = 0 AND scelta = 'SI'") as $r) {
             if (effata_brevo_iscrivi($r->email, $r->nome, $r->cognome)) { effata_brevo_segna($r->email); $sincronizzati++; }
         }
     }
 
     $iscritti  = $wpdb->get_results("SELECT * FROM $tabella ORDER BY data_iscrizione DESC");
     $totale    = count($iscritti);
-    $nuovi     = $wpdb->get_var("SELECT COUNT(*) FROM $tabella WHERE esportato = 0");
+    $nuovi     = $wpdb->get_var("SELECT COUNT(*) FROM $tabella WHERE esportato = 0 AND scelta = 'SI'");
+    $lista_nera  = (int) $wpdb->get_var("SELECT COUNT(*) FROM $tabella WHERE scelta = 'NO'");
+    $da_togliere = (int) $wpdb->get_var("SELECT COUNT(*) FROM $tabella WHERE scelta = 'NO' AND brevo = 1");
     $export_tutti_url  = admin_url('admin.php?page=effata-iscritti&export=csv');
     $export_nuovi_url  = admin_url('admin.php?page=effata-iscritti&export=csv_nuovi');
     ?>
@@ -423,6 +603,7 @@ function effata_admin_iscritti_page() {
         <h1>Iscritti Newsletter Effata</h1>
         <p style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:12px;">
             <span>Totale: <strong><?php echo $totale; ?></strong></span>
+            <span>Lista nera (NO): <strong><?php echo $lista_nera; ?></strong></span>
             <span style="background:#ed1c23; color:#fff; padding:3px 10px; border-radius:20px; font-size:13px; font-weight:700;">
                 <?php echo $nuovi; ?> nuovi da esportare
             </span>
@@ -439,6 +620,7 @@ function effata_admin_iscritti_page() {
         <p>
             <?php $su_brevo = (int) $wpdb->get_var("SELECT COUNT(*) FROM $tabella WHERE brevo = 1"); ?>
             Su Brevo: <strong><?php echo $su_brevo; ?></strong> di <?php echo $totale; ?>
+            <?php if ($da_togliere): ?><span style="color:#c0392b; font-weight:600;"> · ⚠ <?php echo $da_togliere; ?> hanno detto NO ma sono ancora su Brevo: da togliere a mano</span><?php endif; ?>
             <?php if (defined('EFFATA_BREVO_API_KEY') && EFFATA_BREVO_API_KEY): ?>
                 <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=effata-iscritti&brevo=sincronizza'), 'effata_brevo_sync')); ?>" class="button">↻ Manda a Brevo quelli che mancano</a>
             <?php else: ?>
@@ -452,7 +634,7 @@ function effata_admin_iscritti_page() {
         <table class="widefat striped" style="margin-top:16px">
             <thead>
                 <tr>
-                    <th>#</th><th>Nome</th><th>Cognome</th><th>Email</th><th>Data Iscrizione</th><th>Stato</th>
+                    <th>#</th><th>Nome</th><th>Cognome</th><th>Email</th><th>Data Iscrizione</th><th>Data scelta</th><th>Stato</th>
                 </tr>
             </thead>
             <tbody>
@@ -461,8 +643,9 @@ function effata_admin_iscritti_page() {
                     <td><?php echo $i + 1; ?></td>
                     <td><?php echo esc_html($r->nome); ?></td>
                     <td><?php echo esc_html($r->cognome); ?></td>
-                    <td><?php echo esc_html($r->email); ?></td>
+                    <td><?php echo esc_html($r->email); ?><?php if (($r->scelta ?? 'SI') === 'NO'): ?> <span style="background:#313131; color:#fff; padding:2px 8px; border-radius:10px; font-size:11px;">NO · lista nera</span><?php endif; ?></td>
                     <td><?php echo esc_html($r->data_iscrizione); ?></td>
+                    <td><?php echo !empty($r->data_scelta) ? esc_html($r->data_scelta) : '—'; ?></td>
                     <td>
                         <?php if ($r->esportato): ?>
                             <span style="color:#3b8c6e; font-size:12px; font-weight:600;">
