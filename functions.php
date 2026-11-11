@@ -324,6 +324,44 @@ function effata_conferma_disiscrizione() {
 }
 add_action('init', 'effata_conferma_disiscrizione');
 
+// WEBHOOK BREVO — rete di sicurezza: se una persona si disiscrive da Brevo (link in fondo alle email,
+// client di posta, pagina di Brevo) WordPress segna la riga come disiscritta.
+// Endpoint: https://effataitalia.it/wp-json/effata/v1/brevo-webhook?key=SEGRETO
+// In wp-config.php (MAI nel tema o su GitHub):
+//   define('EFFATA_BREVO_WEBHOOK_SECRET', '...');   // stringa lunga e casuale, es. 40+ caratteri
+// Senza segreto l'endpoint rifiuta tutte le chiamate. Brevo non firma le richieste, quindi la chiave nell'URL è l'unica protezione.
+add_action('rest_api_init', function () {
+    register_rest_route('effata/v1', '/brevo-webhook', array(
+        'methods'             => 'POST',
+        'permission_callback' => '__return_true', // il controllo della chiave è nel callback
+        'callback'            => 'effata_brevo_webhook',
+    ));
+});
+
+function effata_brevo_webhook(WP_REST_Request $richiesta) {
+    if (!defined('EFFATA_BREVO_WEBHOOK_SECRET') || !EFFATA_BREVO_WEBHOOK_SECRET) {
+        return new WP_REST_Response(null, 403);
+    }
+    $chiave = (string) $richiesta->get_param('key');
+    if (!hash_equals((string) EFFATA_BREVO_WEBHOOK_SECRET, $chiave)) {
+        return new WP_REST_Response(null, 403);
+    }
+    $dati = $richiesta->get_json_params();
+    $evento = is_array($dati) ? ($dati['event'] ?? '') : '';
+    $email  = is_array($dati) ? sanitize_email($dati['email'] ?? '') : '';
+
+    // Altri eventi (consegnate, aperture, ecc.) si ricevono e si ignorano: rispondiamo 200 per non far ritentare Brevo.
+    if ($evento === 'unsubscribed' && is_email($email)) {
+        global $wpdb;
+        $tabella = $wpdb->prefix . 'effata_iscritti';
+        $wpdb->query($wpdb->prepare(
+            "UPDATE $tabella SET disiscritto_il = %s WHERE email = %s AND disiscritto_il IS NULL",
+            current_time('mysql'), $email
+        ));
+    }
+    return new WP_REST_Response(null, 200);
+}
+
 // 2. GESTIONE FORM (prima di qualsiasi output)
 function effata_gestisci_iscrizione() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['effata_disiscrivi_nonce'])) effata_richiedi_disiscrizione();
