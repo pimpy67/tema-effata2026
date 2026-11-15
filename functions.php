@@ -531,12 +531,12 @@ function effata_gestisci_iscrizione() {
     $nome    = sanitize_text_field(trim($_POST['nome'] ?? ''));
     $cognome = sanitize_text_field(trim($_POST['cognome'] ?? ''));
     $email   = sanitize_email(trim($_POST['email'] ?? ''));
-    $privacy = isset($_POST['privacy']) ? 1 : 0;
-    // Consenso separato e facoltativo: non condiziona l'iscrizione alla newsletter
+    // Unica casella obbligatoria: consenso alla newsletter + presa visione dell'informativa
     $consenso_comunicazioni = isset($_POST['consenso_comunicazioni']) ? 1 : 0;
+    $privacy = $consenso_comunicazioni;
 
     // Validazione
-    if (empty($nome) || empty($cognome) || !is_email($email) || !$privacy) {
+    if (empty($nome) || empty($cognome) || !is_email($email) || !$consenso_comunicazioni) {
         wp_safe_redirect(add_query_arg('esito', 'errore', get_permalink()));
         exit;
     }
@@ -645,7 +645,7 @@ function effata_shortcode_form_newsletter() {
       <?php if ($esito === 'errore'): ?>
         <div style="background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:14px 20px; margin-bottom:24px; color:#c0392b; font-size:14px;">⚠ Controlla i campi: nome, email valida e consenso privacy sono obbligatori.</div>
       <?php endif; ?>
-      <div style="background:#fff; border-radius:12px; padding:56px 64px; box-shadow:0 8px 40px rgba(0,0,0,0.12); border-top:4px solid #ed1c23;">
+      <div id="form-iscrizione" style="background:#fff; border-radius:12px; padding:56px 64px; box-shadow:0 8px 40px rgba(0,0,0,0.12); border-top:4px solid #ed1c23; scroll-margin-top:120px;">
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
           <img src="<?php echo get_template_directory_uri(); ?>/img/logo_rosso.jpg" alt="Effatà Italia" style="width:48px; height:48px; object-fit:contain;">
           <p style="font-size:1rem; color:#555; line-height:1.7; margin:0;">Compila il form qui sotto e riceverai storie, novità dai nostri progetti, eventi e approfondimenti direttamente! A dicembre, ogni mattina, anche la finestra del nostro Calendario dell'Avvento.</p>
@@ -666,12 +666,8 @@ function effata_shortcode_form_newsletter() {
             <input type="email" id="email" name="email" required placeholder="la-tua@email.it" autocomplete="email" style="width:100%; padding:12px 16px; border:2px solid #e5e5e5; border-radius:8px; font-size:15px; font-family:inherit; color:#313131; outline:none; box-sizing:border-box;">
           </div>
           <div style="margin-bottom:28px; display:flex; align-items:flex-start; gap:12px;">
-            <input type="checkbox" id="privacy" name="privacy" required style="width:18px; height:18px; margin-top:2px; accent-color:#ed1c23; flex-shrink:0; cursor:pointer;">
-            <label for="privacy" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Ho letto e accetto la <a href="<?php echo home_url('/privacy-policy'); ?>" target="_blank" style="color:#ed1c23; text-decoration:underline;">Privacy Policy</a> di Effatà Italia. <span style="color:#ed1c23;">*</span></label>
-          </div>
-          <div style="margin-bottom:28px; display:flex; align-items:flex-start; gap:12px;">
-            <input type="checkbox" id="consenso_comunicazioni" name="consenso_comunicazioni" value="1" style="width:18px; height:18px; margin-top:2px; accent-color:#ed1c23; flex-shrink:0; cursor:pointer;">
-            <label for="consenso_comunicazioni" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Ho letto e compreso la <a href="<?php echo home_url('/privacy-policy'); ?>" target="_blank" style="color:#ed1c23; text-decoration:underline;">Privacy Policy</a> e acconsento alla ricezione di comunicazioni informative e promozionali anche con sistemi automatizzati e tracciati.</label>
+            <input type="checkbox" id="consenso_comunicazioni" name="consenso_comunicazioni" value="1" required style="width:18px; height:18px; margin-top:2px; accent-color:#ed1c23; flex-shrink:0; cursor:pointer;">
+            <label for="consenso_comunicazioni" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Ho letto l'<a href="<?php echo home_url('/privacy-policy'); ?>" target="_blank" style="color:#ed1c23; text-decoration:underline;">informativa privacy</a> e acconsento a ricevere la newsletter e le informazioni di Effatà Italia, anche tramite sistemi automatizzati e con rilevazione delle aperture e dei clic. <span style="color:#ed1c23;">*</span></label>
           </div>
           <div style="text-align:center;"><button type="submit" class="btn-newsletter-submit" style="display:inline-block; background:#ed1c23; color:#fff; border:none; padding:14px 32px; border-radius:50px; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:1px; cursor:pointer; font-family:inherit; box-shadow:0 6px 20px rgba(237,28,35,0.30);">Sì, voglio unirmi a Effatà</button></div>
         </form>
