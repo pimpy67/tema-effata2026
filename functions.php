@@ -645,6 +645,13 @@ function effata_shortcode_form_newsletter() {
       <?php if ($esito === 'errore'): ?>
         <div style="background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:14px 20px; margin-bottom:24px; color:#c0392b; font-size:14px;">⚠ Controlla i campi: nome, email valida e consenso privacy sono obbligatori.</div>
       <?php endif; ?>
+      <style>
+      @media (max-width:768px) {
+        #form-iscrizione { padding:32px 20px !important; }
+        #form-iscrizione > div:first-child { flex-direction:column; text-align:center; gap:12px !important; }
+        #disiscrivi { padding:24px 20px !important; }
+      }
+      </style>
       <div id="form-iscrizione" style="background:#fff; border-radius:12px; padding:56px 64px; box-shadow:0 8px 40px rgba(0,0,0,0.12); border-top:4px solid #ed1c23; scroll-margin-top:120px;">
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
           <img src="<?php echo get_template_directory_uri(); ?>/img/logo_rosso.jpg" alt="Effatà Italia" style="width:48px; height:48px; object-fit:contain;">
