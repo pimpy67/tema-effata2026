@@ -1753,3 +1753,10 @@ height: 100vh;
   font-size: 12px !important;
   line-height: 1.5 !important;
 }
+
+/* Pulsante "accetta" del banner cookie: rosso sfumato come la fascia "Restiamo in contatto" */
+.cmplz-cookiebanner .cmplz-btn.cmplz-accept {
+  background: linear-gradient(to right, rgba(237, 28, 35, 1) 0%, rgba(237, 28, 35, .6) 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
