@@ -1229,3 +1229,6 @@ add_filter('the_content', function ($contenuto) {
     get_template_part('template-parts/donazioni-detrazioni');
     return $contenuto . ob_get_clean();
 });
+
+// Barra newsletter in basso (vedi inc-barra-newsletter.php)
+require_once get_template_directory() . '/inc-barra-newsletter.php';
