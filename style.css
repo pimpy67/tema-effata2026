@@ -1736,7 +1736,7 @@ height: 100vh;
 .cmplz-cookiebanner .cmplz-message,
 .cmplz-cookiebanner .cmplz-category-title,
 .cmplz-cookiebanner .cmplz-btn {
-  font-size: 14px !important;
+  font-size: 12px !important;
 }
 @media (max-width: 600px) {
   .cmplz-cookiebanner {
@@ -1750,6 +1750,6 @@ height: 100vh;
 /* Testo del banner cookie: il messaggio è dentro un <p> */
 .cmplz-cookiebanner .cmplz-message p,
 .cmplz-cookiebanner p {
-  font-size: 14px !important;
+  font-size: 12px !important;
   line-height: 1.5 !important;
 }
