@@ -26,7 +26,9 @@ function effata_barra_newsletter() {
             right: 0;
             bottom: 0;
             z-index: 9990;
-            background: #3b8c6e;
+            background: rgba(59, 140, 110, .92);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             color: #fff;
             font-family: 'Noto Sans', sans-serif;
             box-shadow: 0 -2px 12px rgba(0,0,0,.18);
