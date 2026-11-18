@@ -1746,3 +1746,10 @@ height: 100vh;
     width: auto !important;
   }
 }
+
+/* Testo del banner cookie: il messaggio è dentro un <p> */
+.cmplz-cookiebanner .cmplz-message p,
+.cmplz-cookiebanner p {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}

@@ -15,8 +15,6 @@ function effata_barra_newsletter_escluse() {
 
 function effata_barra_newsletter() {
     if ( is_admin() || effata_barra_newsletter_escluse() ) return;
-    // FASE DI TEST: visibile solo agli amministratori. Rimuovere questa riga per renderla pubblica.
-    if ( ! current_user_can( 'manage_options' ) ) return;
     $url = esc_url( home_url( '/iscriviti/#form-iscrizione' ) );
     ?>
     <style>
