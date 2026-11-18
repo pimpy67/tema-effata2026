@@ -17,7 +17,7 @@ function effata_barra_newsletter() {
     if ( is_admin() || effata_barra_newsletter_escluse() ) return;
     // FASE DI TEST: visibile solo agli amministratori. Rimuovere questa riga per renderla pubblica.
     if ( ! current_user_can( 'manage_options' ) ) return;
-    $url = esc_url( home_url( '/iscriviti/' ) );
+    $url = esc_url( home_url( '/iscriviti/#form-iscrizione' ) );
     ?>
     <style>
         #effata-barra-news {
@@ -58,6 +58,17 @@ function effata_barra_newsletter() {
         }
         #effata-barra-news .effata-barra-news__link:hover,
         #effata-barra-news .effata-barra-news__link:focus { text-decoration: underline; }
+        #effata-barra-news .effata-barra-news__freccia {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            margin-left: 8px;
+            border-radius: 50%;
+            background: #fff;
+            vertical-align: middle;
+        }
         #effata-barra-news .effata-barra-news__chiudi {
             position: absolute;
             top: 50%;
@@ -81,7 +92,7 @@ function effata_barra_newsletter() {
         <div class="effata-barra-news__inner">
             <p class="effata-barra-news__testo">
                 Scopri tutti i contenuti e le novità di effataitalia.it.
-                <a class="effata-barra-news__link" href="<?php echo $url; ?>">Iscriviti: non costa nulla, ma per noi è tanto →</a>
+                <a class="effata-barra-news__link" href="<?php echo $url; ?>">Iscriviti: non costa nulla, ma per noi è tanto<span class="effata-barra-news__freccia" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#3b8c6e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
             </p>
         </div>
         <button type="button" class="effata-barra-news__chiudi" aria-label="Chiudi">&times;</button>
