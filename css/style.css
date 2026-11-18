@@ -4915,12 +4915,12 @@ body #cmplz-cookiebanner-container .cmplz-cookiebanner {
 .button.adotta,
 .button.section,
 .wp-block-button__link {
-  background-image: linear-gradient(to right, rgba(237, 28, 35, 1) 0%, rgba(237, 28, 35, .7) 70%);
+  background-image: linear-gradient(to right, rgba(237, 28, 35, 1) 40%, rgba(237, 28, 35, .9) 100%);
 }
 .button.adotta:hover,
 .button.section:hover,
 .wp-block-button__link:hover {
-  background-image: linear-gradient(to right, #3b8c6e 0%, rgba(59, 140, 110, .7) 70%);
+  background-image: linear-gradient(to right, #3b8c6e 40%, rgba(59, 140, 110, .9) 100%);
 }
 
 /* Pulsante "accetta" del banner cookie: verde del brand */
