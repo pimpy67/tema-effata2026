@@ -4872,7 +4872,7 @@ figure:has(.wp-image-91):hover .wp-image-91 {
 }
 
 /* ===== Banner cookie Complianz: in alto a sinistra, testo più piccolo ===== */
-.cmplz-cookiebanner {
+body #cmplz-cookiebanner-container .cmplz-cookiebanner {
   --cmplz_banner_width: 340px;
   top: 160px !important;
   left: 16px !important;
@@ -4896,7 +4896,7 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   font-size: 13px !important;
 }
 @media (max-width: 600px) {
-  .cmplz-cookiebanner {
+  body #cmplz-cookiebanner-container .cmplz-cookiebanner {
     top: 96px !important;
     left: 8px !important;
     right: 8px !important;
