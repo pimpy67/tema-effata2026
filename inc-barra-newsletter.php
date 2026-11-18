@@ -2,15 +2,15 @@
 /**
  * Barra fissa in basso per invitare all'iscrizione alla newsletter.
  * Compare dopo 1,5 secondi, si chiude con la X e non ricompare (localStorage).
- * Esclusa dalla pagina iscriviti e dalle landing / pagine di raccolta fondi.
+ * Visibile su tutte le pagine tranne la pagina iscriviti.
  */
 
 function effata_barra_newsletter_escluse() {
-    $escluse = array( 'page-iscriviti.php', 'page-landing.php', 'page-5x1000.php', 'page-adotta-ora.php' );
+    $escluse = array( 'page-iscriviti.php' );
     foreach ( $escluse as $template ) {
         if ( is_page_template( $template ) ) return true;
     }
-    return is_page( 'iscriviti' ) || is_404();
+    return is_page( 'iscriviti' );
 }
 
 function effata_barra_newsletter() {
