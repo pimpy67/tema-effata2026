@@ -4873,15 +4873,16 @@ figure:has(.wp-image-91):hover .wp-image-91 {
 
 /* ===== Banner cookie Complianz: in alto a sinistra, testo più piccolo ===== */
 .cmplz-cookiebanner {
-  top: 88px !important;
+  --cmplz_banner_width: 340px;
+  top: 120px !important;
   left: 16px !important;
   right: auto !important;
   bottom: auto !important;
   transform: none !important;
-  width: min(380px, calc(100vw - 32px)) !important;
+  width: min(340px, calc(100vw - 32px)) !important;
   max-height: calc(100vh - 104px);
   overflow-y: auto;
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
   font-size: 14px !important;
   line-height: 1.5;
@@ -4910,9 +4911,12 @@ figure:has(.wp-image-91):hover .wp-image-91 {
   line-height: 1.5 !important;
 }
 
-/* Pulsante "accetta" del banner cookie: rosso sfumato come la fascia "Restiamo in contatto" */
-.cmplz-cookiebanner .cmplz-btn.cmplz-accept {
-  background: linear-gradient(to right, rgba(237, 28, 35, 1) 0%, rgba(237, 28, 35, .6) 100%) !important;
-  border-color: transparent !important;
-  color: #fff !important;
+/* Pulsanti call to action: rosso sfumato (verde al passaggio del mouse) */
+.button.adotta,
+.button.section {
+  background-image: linear-gradient(to right, rgba(237, 28, 35, 1) 0%, rgba(237, 28, 35, .6) 100%);
+}
+.button.adotta:hover,
+.button.section:hover {
+  background-image: linear-gradient(to right, rgba(59, 140, 110, 1) 0%, rgba(59, 140, 110, .6) 100%);
 }
