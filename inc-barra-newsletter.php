@@ -62,11 +62,11 @@ function effata_barra_newsletter() {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 22px;
-            height: 22px;
+            width: 28px;
+            height: 28px;
             margin-left: 8px;
             border-radius: 50%;
-            background: #fff;
+            background: #ffd23f;
             vertical-align: middle;
         }
         #effata-barra-news .effata-barra-news__chiudi {
@@ -92,7 +92,7 @@ function effata_barra_newsletter() {
         <div class="effata-barra-news__inner">
             <p class="effata-barra-news__testo">
                 Scopri tutti i contenuti e le novità di effataitalia.it.
-                <a class="effata-barra-news__link" href="<?php echo $url; ?>">Iscriviti: non costa nulla, ma per noi è tanto<span class="effata-barra-news__freccia" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#3b8c6e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+                <a class="effata-barra-news__link" href="<?php echo $url; ?>">Iscriviti: non costa nulla, ma per noi è tanto<span class="effata-barra-news__freccia" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#3b8c6e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
             </p>
         </div>
         <button type="button" class="effata-barra-news__chiudi" aria-label="Chiudi">&times;</button>

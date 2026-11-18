@@ -1714,3 +1714,35 @@ height: 100vh;
 .faq-item a {
   color: #ed1c23;
 }
+
+/* ===== Banner cookie Complianz: in alto a sinistra, testo più piccolo ===== */
+.cmplz-cookiebanner {
+  top: 88px !important;
+  left: 16px !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: min(380px, calc(100vw - 32px)) !important;
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+  font-size: 14px !important;
+  line-height: 1.5;
+}
+.cmplz-cookiebanner .cmplz-title {
+  font-size: 16px !important;
+}
+.cmplz-cookiebanner .cmplz-message,
+.cmplz-cookiebanner .cmplz-category-title,
+.cmplz-cookiebanner .cmplz-btn {
+  font-size: 14px !important;
+}
+@media (max-width: 600px) {
+  .cmplz-cookiebanner {
+    top: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+  }
+}
