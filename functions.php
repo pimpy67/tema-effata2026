@@ -531,12 +531,13 @@ function effata_gestisci_iscrizione() {
     $nome    = sanitize_text_field(trim($_POST['nome'] ?? ''));
     $cognome = sanitize_text_field(trim($_POST['cognome'] ?? ''));
     $email   = sanitize_email(trim($_POST['email'] ?? ''));
-    // Unica casella obbligatoria: consenso alla newsletter + presa visione dell'informativa
+    // Casella 1: presa visione dell'informativa privacy
+    $privacy = isset($_POST['privacy_letta']) ? 1 : 0;
+    // Casella 2: consenso alla ricezione di comunicazioni anche con sistemi automatizzati e tracciati
     $consenso_comunicazioni = isset($_POST['consenso_comunicazioni']) ? 1 : 0;
-    $privacy = $consenso_comunicazioni;
 
-    // Validazione
-    if (empty($nome) || empty($cognome) || !is_email($email) || !$consenso_comunicazioni) {
+    // Validazione: entrambe le caselle sono obbligatorie
+    if (empty($nome) || empty($cognome) || !is_email($email) || !$privacy || !$consenso_comunicazioni) {
         wp_safe_redirect(add_query_arg('esito', 'errore', get_permalink()));
         exit;
     }
@@ -643,7 +644,7 @@ function effata_shortcode_form_newsletter() {
       <div style="background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:20px 24px; color:#c0392b; font-size:15px; line-height:1.6;">Il link non è più valido o è già stato usato. Se vuoi ancora toglierti dalla lista, richiedi un nuovo link più sotto.</div>
     <?php else: ?>
       <?php if ($esito === 'errore'): ?>
-        <div style="background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:14px 20px; margin-bottom:24px; color:#c0392b; font-size:14px;">⚠ Controlla i campi: nome, email valida e consenso privacy sono obbligatori.</div>
+        <div style="background:#fff0f0; border-left:4px solid #ed1c23; border-radius:4px; padding:14px 20px; margin-bottom:24px; color:#c0392b; font-size:14px;">⚠ Controlla i campi: nome, email valida, presa visione della privacy policy e consenso alle comunicazioni sono obbligatori.</div>
       <?php endif; ?>
       <style>
       @media (max-width:768px) {
@@ -672,9 +673,13 @@ function effata_shortcode_form_newsletter() {
             <label for="email" style="display:block; font-size:15px; font-weight:600; color:#313131; margin-bottom:6px;">Email <span style="color:#ed1c23;">*</span></label>
             <input type="email" id="email" name="email" required placeholder="la-tua@email.it" autocomplete="email" style="width:100%; padding:12px 16px; border:2px solid #e5e5e5; border-radius:8px; font-size:15px; font-family:inherit; color:#313131; outline:none; box-sizing:border-box;">
           </div>
+          <div style="margin-bottom:16px; display:flex; align-items:flex-start; gap:12px;">
+            <input type="checkbox" id="privacy_letta" name="privacy_letta" value="1" required style="width:18px; height:18px; margin-top:2px; accent-color:#ed1c23; flex-shrink:0; cursor:pointer;">
+            <label for="privacy_letta" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Ho letto e compreso la <a href="<?php echo home_url('/privacy-policy/'); ?>" target="_blank" style="color:#ed1c23; text-decoration:underline;">Privacy Policy</a>. <span style="color:#ed1c23;">*</span></label>
+          </div>
           <div style="margin-bottom:28px; display:flex; align-items:flex-start; gap:12px;">
             <input type="checkbox" id="consenso_comunicazioni" name="consenso_comunicazioni" value="1" required style="width:18px; height:18px; margin-top:2px; accent-color:#ed1c23; flex-shrink:0; cursor:pointer;">
-            <label for="consenso_comunicazioni" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Ho letto l'<a href="<?php echo home_url('/privacy-policy'); ?>" target="_blank" style="color:#ed1c23; text-decoration:underline;">informativa privacy</a> e acconsento a ricevere la newsletter e le informazioni di Effatà Italia, anche tramite sistemi automatizzati e con rilevazione delle aperture e dei clic. <span style="color:#ed1c23;">*</span></label>
+            <label for="consenso_comunicazioni" style="font-size:12px; color:#666; line-height:1.6; cursor:pointer;">Acconsento alla ricezione di comunicazioni informative e promozionali di Effatà Italia, anche tramite sistemi automatizzati e tracciati (rilevazione delle aperture e dei clic). <span style="color:#ed1c23;">*</span></label>
           </div>
           <div style="text-align:center;"><button type="submit" class="btn-newsletter-submit" style="display:inline-block; background:#ed1c23; color:#fff; border:none; padding:14px 32px; border-radius:50px; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:1px; cursor:pointer; font-family:inherit; box-shadow:0 6px 20px rgba(237,28,35,0.30);">Sì, voglio unirmi a Effatà</button></div>
         </form>
